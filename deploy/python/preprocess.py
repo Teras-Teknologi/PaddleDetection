@@ -15,7 +15,7 @@
 import cv2
 import numpy as np
 import imgaug.augmenters as iaa
-from keypoint_preprocess import get_affine_transform
+from PaddleDetection.deploy.python.keypoint_preprocess import get_affine_transform
 from PIL import Image
 
 
@@ -29,15 +29,15 @@ def decode_image(im_file, im_info):
         im_info (dict): info of processed image
     """
     if isinstance(im_file, str):
-        with open(im_file, 'rb') as f:
+        with open(im_file, "rb") as f:
             im_read = f.read()
-        data = np.frombuffer(im_read, dtype='uint8')
+        data = np.frombuffer(im_read, dtype="uint8")
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     else:
         im = im_file
-    im_info['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
-    im_info['scale_factor'] = np.array([1., 1.], dtype=np.float32)
+    im_info["im_shape"] = np.array(im.shape[:2], dtype=np.float32)
+    im_info["scale_factor"] = np.array([1.0, 1.0], dtype=np.float32)
     return im, im_info
 
 
@@ -66,15 +66,10 @@ class Resize_Mult32(object):
         im_channel = im.shape[2]
         im_scale_y, im_scale_x = self.generate_scale(im)
         im = cv2.resize(
-            im,
-            None,
-            None,
-            fx=im_scale_x,
-            fy=im_scale_y,
-            interpolation=self.interp)
-        im_info['im_shape'] = np.array(im.shape[:2]).astype('float32')
-        im_info['scale_factor'] = np.array(
-            [im_scale_y, im_scale_x]).astype('float32')
+            im, None, None, fx=im_scale_x, fy=im_scale_y, interpolation=self.interp
+        )
+        im_info["im_shape"] = np.array(im.shape[:2]).astype("float32")
+        im_info["scale_factor"] = np.array([im_scale_y, im_scale_x]).astype("float32")
         return im, im_info
 
     def generate_scale(self, img):
@@ -89,20 +84,20 @@ class Resize_Mult32(object):
         h, w, c = img.shape
 
         # limit the max side
-        if self.limit_type == 'max':
+        if self.limit_type == "max":
             if h > w:
                 ratio = float(limit_side_len) / h
             else:
                 ratio = float(limit_side_len) / w
-        elif self.limit_type == 'min':
+        elif self.limit_type == "min":
             if h < w:
                 ratio = float(limit_side_len) / h
             else:
                 ratio = float(limit_side_len) / w
-        elif self.limit_type == 'resize_long':
+        elif self.limit_type == "resize_long":
             ratio = float(limit_side_len) / max(h, w)
         else:
-            raise Exception('not support limit type, image ')
+            raise Exception("not support limit type, image ")
         resize_h = int(h * ratio)
         resize_w = int(w * ratio)
 
@@ -143,15 +138,10 @@ class Resize(object):
         im_channel = im.shape[2]
         im_scale_y, im_scale_x = self.generate_scale(im)
         im = cv2.resize(
-            im,
-            None,
-            None,
-            fx=im_scale_x,
-            fy=im_scale_y,
-            interpolation=self.interp)
-        im_info['im_shape'] = np.array(im.shape[:2]).astype('float32')
-        im_info['scale_factor'] = np.array(
-            [im_scale_y, im_scale_x]).astype('float32')
+            im, None, None, fx=im_scale_x, fy=im_scale_y, interpolation=self.interp
+        )
+        im_info["im_shape"] = np.array(im.shape[:2]).astype("float32")
+        im_info["scale_factor"] = np.array([im_scale_y, im_scale_x]).astype("float32")
         return im, im_info
 
     def generate_scale(self, im):
@@ -191,12 +181,14 @@ class ShortSizeScale(object):
         backend(str): Choose pillow or cv2 as the graphics processing backend. default: 'pillow'
     """
 
-    def __init__(self,
-                 short_size,
-                 fixed_ratio=True,
-                 keep_ratio=None,
-                 do_round=False,
-                 backend='pillow'):
+    def __init__(
+        self,
+        short_size,
+        fixed_ratio=True,
+        keep_ratio=None,
+        do_round=False,
+        backend="pillow",
+    ):
         self.short_size = short_size
         assert (fixed_ratio and not keep_ratio) or (
             not fixed_ratio
@@ -206,7 +198,8 @@ class ShortSizeScale(object):
         self.do_round = do_round
 
         assert backend in [
-            'pillow', 'cv2'
+            "pillow",
+            "cv2",
         ], "Scale's backend must be pillow or cv2, but get {backend}"
 
         self.backend = backend
@@ -237,10 +230,16 @@ class ShortSizeScale(object):
                 oh = self.short_size
             else:
                 scale_factor = self.short_size / w
-                oh = int(h * float(scale_factor) +
-                         0.5) if self.do_round else int(h * self.short_size / w)
-                ow = int(w * float(scale_factor) +
-                         0.5) if self.do_round else int(w * self.short_size / h)
+                oh = (
+                    int(h * float(scale_factor) + 0.5)
+                    if self.do_round
+                    else int(h * self.short_size / w)
+                )
+                ow = (
+                    int(w * float(scale_factor) + 0.5)
+                    if self.do_round
+                    else int(w * self.short_size / h)
+                )
         else:
             oh = self.short_size
             if self.fixed_ratio:
@@ -249,23 +248,28 @@ class ShortSizeScale(object):
                 ow = self.short_size
             else:
                 scale_factor = self.short_size / h
-                oh = int(h * float(scale_factor) +
-                         0.5) if self.do_round else int(h * self.short_size / w)
-                ow = int(w * float(scale_factor) +
-                         0.5) if self.do_round else int(w * self.short_size / h)
+                oh = (
+                    int(h * float(scale_factor) + 0.5)
+                    if self.do_round
+                    else int(h * self.short_size / w)
+                )
+                ow = (
+                    int(w * float(scale_factor) + 0.5)
+                    if self.do_round
+                    else int(w * self.short_size / h)
+                )
 
         if type(img) == np.ndarray:
-            img = Image.fromarray(img, mode='RGB')
+            img = Image.fromarray(img, mode="RGB")
 
-        if self.backend == 'pillow':
+        if self.backend == "pillow":
             result_img = img.resize((ow, oh), Image.BILINEAR)
-        elif self.backend == 'cv2' and (self.keep_ratio is not None):
-            result_img = cv2.resize(
-                img, (ow, oh), interpolation=cv2.INTER_LINEAR)
+        elif self.backend == "cv2" and (self.keep_ratio is not None):
+            result_img = cv2.resize(img, (ow, oh), interpolation=cv2.INTER_LINEAR)
         else:
             result_img = Image.fromarray(
-                cv2.resize(
-                    np.asarray(img), (ow, oh), interpolation=cv2.INTER_LINEAR))
+                cv2.resize(np.asarray(img), (ow, oh), interpolation=cv2.INTER_LINEAR)
+            )
 
         return result_img
 
@@ -279,7 +283,7 @@ class NormalizeImage(object):
         norm_type (str): type in ['mean_std', 'none']
     """
 
-    def __init__(self, mean, std, is_scale=True, norm_type='mean_std'):
+    def __init__(self, mean, std, is_scale=True, norm_type="mean_std"):
         self.mean = mean
         self.std = std
         self.is_scale = is_scale
@@ -299,7 +303,7 @@ class NormalizeImage(object):
             scale = 1.0 / 255.0
             im *= scale
 
-        if self.norm_type == 'mean_std':
+        if self.norm_type == "mean_std":
             mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
             std = np.array(self.std)[np.newaxis, np.newaxis, :]
             im -= mean
@@ -310,11 +314,13 @@ class NormalizeImage(object):
 class Permute(object):
     """permute image
     Args:
-        to_bgr (bool): whether convert RGB to BGR 
+        to_bgr (bool): whether convert RGB to BGR
         channel_first (bool): whether convert HWC to CHW
     """
 
-    def __init__(self, ):
+    def __init__(
+        self,
+    ):
         super(Permute, self).__init__()
 
     def __call__(self, im, im_info):
@@ -331,7 +337,7 @@ class Permute(object):
 
 
 class PadStride(object):
-    """ padding image for model with FPN, instead PadBatch(pad_to_stride) in original config
+    """padding image for model with FPN, instead PadBatch(pad_to_stride) in original config
     Args:
         stride (bool): model with FPN need image shape % stride == 0
     """
@@ -378,18 +384,21 @@ class LetterBoxResize(object):
         ratio_h = float(height) / shape[0]
         ratio_w = float(width) / shape[1]
         ratio = min(ratio_h, ratio_w)
-        new_shape = (round(shape[1] * ratio),
-                     round(shape[0] * ratio))  # [width, height]
+        new_shape = (
+            round(shape[1] * ratio),
+            round(shape[0] * ratio),
+        )  # [width, height]
         padw = (width - new_shape[0]) / 2
         padh = (height - new_shape[1]) / 2
         top, bottom = round(padh - 0.1), round(padh + 0.1)
         left, right = round(padw - 0.1), round(padw + 0.1)
 
         img = cv2.resize(
-            img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
+            img, new_shape, interpolation=cv2.INTER_AREA
+        )  # resized, no border
         img = cv2.copyMakeBorder(
-            img, top, bottom, left, right, cv2.BORDER_CONSTANT,
-            value=color)  # padded rectangular
+            img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color
+        )  # padded rectangular
         return img, ratio, padw, padh
 
     def __call__(self, im, im_info):
@@ -408,8 +417,8 @@ class LetterBoxResize(object):
         im, ratio, padw, padh = self.letterbox(im, height=height, width=width)
 
         new_shape = [round(h * ratio), round(w * ratio)]
-        im_info['im_shape'] = np.array(new_shape, dtype=np.float32)
-        im_info['scale_factor'] = np.array([ratio, ratio], dtype=np.float32)
+        im_info["im_shape"] = np.array(new_shape, dtype=np.float32)
+        im_info["scale_factor"] = np.array([ratio, ratio], dtype=np.float32)
         return im, im_info
 
 
@@ -442,17 +451,18 @@ class Pad(object):
 
 
 class WarpAffine(object):
-    """Warp affine the image
-    """
+    """Warp affine the image"""
 
-    def __init__(self,
-                 keep_res=False,
-                 pad=31,
-                 input_h=512,
-                 input_w=512,
-                 scale=0.4,
-                 shift=0.1,
-                 down_ratio=4):
+    def __init__(
+        self,
+        keep_res=False,
+        pad=31,
+        input_h=512,
+        input_w=512,
+        scale=0.4,
+        shift=0.1,
+        down_ratio=4,
+    ):
         self.keep_res = keep_res
         self.pad = pad
         self.input_h = input_h
@@ -485,28 +495,31 @@ class WarpAffine(object):
             # False in centertrack eval_mot/eval_mot
             s = max(h, w) * 1.0
             input_h, input_w = self.input_h, self.input_w
-            c = np.array([w / 2., h / 2.], dtype=np.float32)
+            c = np.array([w / 2.0, h / 2.0], dtype=np.float32)
 
         trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
         img = cv2.resize(img, (w, h))
         inp = cv2.warpAffine(
-            img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
+            img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR
+        )
 
         if not self.keep_res:
             out_h = input_h // self.down_ratio
             out_w = input_w // self.down_ratio
             trans_output = get_affine_transform(c, s, 0, [out_w, out_h])
 
-            im_info.update({
-                'center': c,
-                'scale': s,
-                'out_height': out_h,
-                'out_width': out_w,
-                'inp_height': input_h,
-                'inp_width': input_w,
-                'trans_input': trans_input,
-                'trans_output': trans_output,
-            })
+            im_info.update(
+                {
+                    "center": c,
+                    "scale": s,
+                    "out_height": out_h,
+                    "out_width": out_w,
+                    "inp_height": input_h,
+                    "inp_width": input_w,
+                    "trans_input": trans_input,
+                    "trans_output": trans_output,
+                }
+            )
         return inp, im_info
 
 
@@ -520,16 +533,14 @@ class CULaneResize(object):
 
     def __call__(self, im, im_info):
         # cut
-        im = im[self.cut_height:, :, :]
+        im = im[self.cut_height :, :, :]
         # resize
-        transform = iaa.Sometimes(self.prob,
-                                  iaa.Resize({
-                                      "height": self.img_h,
-                                      "width": self.img_w
-                                  }))
+        transform = iaa.Sometimes(
+            self.prob, iaa.Resize({"height": self.img_h, "width": self.img_w})
+        )
         im = transform(image=im.copy().astype(np.uint8))
 
-        im = im.astype(np.float32) / 255.
+        im = im.astype(np.float32) / 255.0
         # check transpose is need whether the func decode_image is equal to CULaneDataSet cv.imread
         im = im.transpose(2, 0, 1)
 
@@ -539,9 +550,8 @@ class CULaneResize(object):
 def preprocess(im, preprocess_ops):
     # process image by preprocess_ops
     im_info = {
-        'scale_factor': np.array(
-            [1., 1.], dtype=np.float32),
-        'im_shape': None,
+        "scale_factor": np.array([1.0, 1.0], dtype=np.float32),
+        "im_shape": None,
     }
     im, im_info = decode_image(im, im_info)
     for operator in preprocess_ops:
